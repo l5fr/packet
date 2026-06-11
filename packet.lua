@@ -1,4 +1,4 @@
-local Bracket = loadstring(game:HttpGet("https://raw.githubusercontent.com/l5fr/packet/packet.lua"))()
+local Bracket = loadstring(game:HttpGet("https://raw.githubusercontent.com/AlexR32/Bracket/main/BracketV32.lua"))()
 Bracket:Notification() Bracket:Notification2()
 
 local Window = Bracket:Window({Name = "Window",Enabled = true,Color = Color3.new(1,0.5,0.25),Size = UDim2.new(0,496,0,496),Position = UDim2.new(0.5,-248,0.5,-248)}) do
