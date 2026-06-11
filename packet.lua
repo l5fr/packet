@@ -1,338 +1,566 @@
-local Packet = {}
+--// Coast (old) GUI
+--// Coast (old) GUI
+local Library = loadstring(game:HttpGet("https://github.com/l5fr/packet/edit/main/packet.lua"))()
+local MainTab = Library:CreateTab("Packet / Sell Lemons", "By Claude")
 
--- Create a simple GUI from scratch
-function Packet:Window(data)
-    local window = {}
-    window.Name = data.Name or "Window"
-    window.Color = data.Color or Color3.new(1, 0.5, 0.25)
-    window.Size = data.Size or UDim2.new(0, 496, 0, 496)
-    window.Position = data.Position or UDim2.new(0.5, -248, 0.5, -248)
-    
-    -- Create ScreenGui
+--// Services
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+--// Find Tycoon
+local userTycoon = (function()
+    for _, v in pairs(workspace:GetChildren()) do
+        if v:IsA("Folder") and v.Name:match("Tycoon%d") then
+            if v:FindFirstChild("Owner") and v.Owner.Value == LocalPlayer then
+                return v
+            end
+        end
+    end
+end)()
+
+if not userTycoon then
+    warn("Tycoon not found!")
+    return
+end
+
+--// Variables
+local AutoBuy = false
+local AutoUpgrade = false
+local AutoFruit = false
+local AutoRebirth = false
+local AutoEvolve = false
+local AutoPowerLevel = false
+
+local stats = { buys = 0, upgrades = 0, fruit = 0, rebirths = 0, evolves = 0 }
+
+local function buyAllAffordable()
+    for _, obj in ipairs(userTycoon.Purchases:GetDescendants()) do
+        if obj:IsA("Model") then
+            local shown = obj:GetAttribute("Shown")
+            local purchased = obj:GetAttribute("Purchased")
+            if shown == true and purchased ~= true then
+                local purchase = obj:FindFirstChild("Purchase")
+                if purchase and purchase:IsA("RemoteFunction") then
+                    pcall(function() purchase:InvokeServer() end)
+                    stats.buys = stats.buys + 1
+                end
+            end
+        end
+    end
+end
+
+task.spawn(function()
+    while true do
+        task.wait(0.05)
+        if AutoBuy then pcall(buyAllAffordable) end
+    end
+end)
+
+local upgradeRemotes  = {}
+local upgradeLevel    = {}
+local lastUpgradeScan = 0
+
+local function refreshUpgradeRemotes()
+    upgradeRemotes = {}
+    upgradeLevel   = {}
+    local purchases = userTycoon:FindFirstChild("Purchases")
+    if not purchases then return end
+    for _, obj in ipairs(purchases:GetDescendants()) do
+        if obj:IsA("RemoteFunction") and obj.Name == "Upgrade" then
+            upgradeRemotes[#upgradeRemotes + 1] = obj
+        end
+    end
+end
+
+task.spawn(function()
+    while true do
+        task.wait(0.25)
+        if AutoUpgrade then
+            if tick() - lastUpgradeScan > 3 then
+                refreshUpgradeRemotes()
+                lastUpgradeScan = tick()
+            end
+            for _, remote in ipairs(upgradeRemotes) do
+                if remote.Parent then
+                    local lvl = (upgradeLevel[remote] or 0) + 1
+                    while lvl <= 100 do
+                        local ok, res = pcall(function() return remote:InvokeServer(lvl) end)
+                        if (not ok) or res == false then break end
+                        upgradeLevel[remote] = lvl
+                        stats.upgrades = stats.upgrades + 1
+                        lvl = lvl + 1
+                    end
+                end
+            end
+        end
+    end
+end)
+
+local function getPowerLevelRemote()
+    local remotes = userTycoon:FindFirstChild("Remotes")
+    return remotes and remotes:FindFirstChild("UpgradePowerLevel")
+end
+
+task.spawn(function()
+    while true do
+        task.wait(0.25)
+        if AutoPowerLevel then
+            local remote = getPowerLevelRemote()
+            if remote then pcall(function() remote:InvokeServer() end) end
+        end
+    end
+end)
+
+local RebirthGainMultiple = 1.0
+local MinPotential        = 1
+local RebirthCooldown     = 2
+local RebirthTimeout      = 8
+local rebirthBusy         = false
+
+local function getRebirthRemote()
+    local remotes = userTycoon:FindFirstChild("Remotes")
+    return remotes and remotes:FindFirstChild("Rebirth")
+end
+local function getRebirthedSignal()
+    local remotes = userTycoon:FindFirstChild("Remotes")
+    return remotes and remotes:FindFirstChild("Rebirthed")
+end
+
+local NUM_SCALE = {
+    thousand=1e3, million=1e6, billion=1e9, trillion=1e12, quadrillion=1e15,
+    quintillion=1e18, sextillion=1e21, septillion=1e24, octillion=1e27,
+    nonillion=1e30, decillion=1e33, k=1e3, m=1e6, b=1e9, t=1e12,
+    qd=1e15, qn=1e18, sx=1e21, sp=1e24,
+}
+local function parseNumber(s)
+    if not s then return nil end
+    s = tostring(s):gsub(",", ""):lower()
+    local num = s:match("[%d%.]+")
+    local val = num and tonumber(num)
+    if not val then return nil end
+    local word = s:match("[%d%.%s]+([a-z]+)")
+    if word and NUM_SCALE[word] then val = val * NUM_SCALE[word] end
+    return val
+end
+
+local function investorBody()
+    local pg = LocalPlayer:FindFirstChildOfClass("PlayerGui")
+    local r  = pg and pg:FindFirstChild("Rebirth")
+    local im = r and r:FindFirstChild("InvestorsMenu")
+    return im and im:FindFirstChild("Body")
+end
+local function readQuantity(frameName)
+    local body  = investorBody()
+    local frame = body and body:FindFirstChild(frameName)
+    local q     = frame and frame:FindFirstChild("Quantity")
+    return q and parseNumber(q.Text)
+end
+local function getCurrentInvestors()   return readQuantity("Amount")    or 0 end
+local function getPotentialInvestors() return readQuantity("Potential")       end
+
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        if AutoRebirth and not rebirthBusy then
+            local remote    = getRebirthRemote()
+            local potential = getPotentialInvestors()
+            local current   = getCurrentInvestors()
+            local worthIt = remote and potential
+                and potential >= MinPotential
+                and potential >= current * RebirthGainMultiple
+            if worthIt then
+                rebirthBusy = true
+                pcall(function()
+                    local done   = false
+                    local signal = getRebirthedSignal()
+                    local conn
+                    if signal and signal:IsA("RemoteEvent") then
+                        conn = signal.OnClientEvent:Connect(function() done = true end)
+                    end
+                    remote:InvokeServer()
+                    stats.rebirths = stats.rebirths + 1
+                    local t = 0
+                    while not done and t < RebirthTimeout do task.wait(0.1); t = t + 0.1 end
+                    if conn then conn:Disconnect() end
+                end)
+                task.wait(RebirthCooldown)
+                rebirthBusy = false
+            end
+        end
+    end
+end)
+
+local EvolveAt        = 100
+local EvolveCooldown  = 2
+local EvolveTimeout   = 8
+local evolveBusy      = false
+
+local function getEvolveRemote()
+    local remotes = userTycoon:FindFirstChild("Remotes")
+    return remotes and remotes:FindFirstChild("Evolve")
+end
+local function getEvolvedSignal()
+    local remotes = userTycoon:FindFirstChild("Remotes")
+    return remotes and remotes:FindFirstChild("Evolved")
+end
+local function getEvolveProgress()
+    local pg = LocalPlayer:FindFirstChildOfClass("PlayerGui")
+    local r  = pg and pg:FindFirstChild("Rebirth")
+    local em = r and r:FindFirstChild("EvolutionMenu")
+    local body = em and em:FindFirstChild("Body")
+    local p  = body and body:FindFirstChild("Progress")
+    if not p then return nil end
+    return tonumber(tostring(p.Text):match("[%d%.]+"))
+end
+
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        if AutoEvolve and not evolveBusy then
+            local remote   = getEvolveRemote()
+            local progress = getEvolveProgress()
+            if remote and progress and progress >= EvolveAt then
+                evolveBusy = true
+                pcall(function()
+                    local done   = false
+                    local signal = getEvolvedSignal()
+                    local conn
+                    if signal and signal:IsA("RemoteEvent") then
+                        conn = signal.OnClientEvent:Connect(function() done = true end)
+                    end
+                    remote:InvokeServer()
+                    stats.evolves = stats.evolves + 1
+                    local t = 0
+                    while not done and t < EvolveTimeout do task.wait(0.1); t = t + 0.1 end
+                    if conn then conn:Disconnect() end
+                end)
+                task.wait(EvolveCooldown)
+                evolveBusy = false
+            end
+        end
+    end
+end)
+
+local function touchPart(hrp, part)
+    pcall(function() firetouchinterest(hrp, part, 0); firetouchinterest(hrp, part, 1) end)
+end
+
+local function pullAllLevers()
+    local char = LocalPlayer.Character
+    local hrp  = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return 0 end
+    local map   = workspace:FindFirstChild("Map")
+    local sewer = map and map:FindFirstChild("Sewer")
+    local root  = sewer or workspace
+    local pulled = 0
+    for _, o in ipairs(root:GetDescendants()) do
+        if o:IsA("BasePart") and string.find(string.lower(o.Name), "lever", 1, true) then
+            touchPart(hrp, o)
+            pulled = pulled + 1
+        end
+    end
+    if sewer then
+        for _, o in ipairs(sewer:GetDescendants()) do
+            if o:IsA("BasePart") and (o.Name == "VineKey" or o.Name == "UFOKey") then
+                touchPart(hrp, o)
+            end
+        end
+    end
+    return pulled
+end
+
+local function doSewerRun()
+    local char = LocalPlayer.Character
+    local hrp  = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return false, "no character" end
+    local map   = workspace:FindFirstChild("Map")
+    local sewer = map and map:FindFirstChild("Sewer")
+    if not sewer then return false, "sewer not loaded" end
+    for _, o in ipairs(sewer:GetDescendants()) do
+        if o:IsA("BasePart") and string.find(string.lower(o.Name), "lever", 1, true) then
+            touchPart(hrp, o)
+        end
+    end
+    for _, folderName in ipairs({ "CashVine", "SewerAlien" }) do
+        local folder = sewer:FindFirstChild(folderName)
+        if folder then
+            for _, o in ipairs(folder:GetDescendants()) do
+                if o:IsA("BasePart") and (o.Name == "VineKey" or o.Name == "UFOKey") then
+                    touchPart(hrp, o)
+                end
+            end
+        end
+    end
+    task.wait(0.3)
+    local cashVine = sewer:FindFirstChild("CashVine")
+    if cashVine then
+        local vineDoor = cashVine:FindFirstChild("VineDoor")
+        if vineDoor then
+            for _, o in ipairs(vineDoor:GetDescendants()) do
+                if o:IsA("BasePart") then touchPart(hrp, o) end
+            end
+        end
+    end
+    task.wait(0.3)
+    if cashVine then
+        local vineModel = cashVine:FindFirstChild("CashVine")
+        if vineModel then
+            local pivot = vineModel:GetPivot()
+            pcall(function() hrp.CFrame = pivot + Vector3.new(0, 3, 0) end)
+            task.wait(0.2)
+            for _, o in ipairs(vineModel:GetDescendants()) do
+                if o:IsA("BasePart") then touchPart(hrp, o) end
+            end
+        end
+    end
+    return true
+end
+
+local SEWER_ALIEN_POS = Vector3.new(-42, -41, 180)
+local function teleportToAlien()
+    local char = LocalPlayer.Character
+    local hrp  = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return false, "no character" end
+    pcall(function() hrp.CFrame = CFrame.new(SEWER_ALIEN_POS) end)
+    return true
+end
+
+local Trees = {}
+local function addTree(obj)
+    if obj:IsA("Model") and obj.Name == "LemonTree" then
+        if not table.find(Trees, obj) then table.insert(Trees, obj) end
+    end
+end
+local function removeTree(obj)
+    local index = table.find(Trees, obj)
+    if index then table.remove(Trees, index) end
+end
+for _, v in ipairs(workspace:GetDescendants()) do addTree(v) end
+workspace.DescendantAdded:Connect(addTree)
+workspace.DescendantRemoving:Connect(removeTree)
+
+local function noCollisionTree(tree)
+    for _, obj in ipairs(tree:GetDescendants()) do
+        if obj:IsA("BasePart") then obj.CanCollide = false end
+    end
+end
+local function teleportToTree(tree)
+    local character = LocalPlayer.Character
+    if not character then return false end
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return false end
+    hrp.CFrame = tree:GetPivot() + Vector3.new(0, 5, 0)
+    return true
+end
+local function collectFruit(tree)
+    noCollisionTree(tree)
+    if not teleportToTree(tree) then return end
+    for _, obj in ipairs(tree:GetDescendants()) do
+        if obj:IsA("BasePart") and obj.Name == "Fruit" then
+            obj.CanCollide = false
+            local clickPart = obj:FindFirstChild("ClickPart")
+            if clickPart then
+                local detector = clickPart:FindFirstChildOfClass("ClickDetector")
+                if detector then
+                    task.wait(0.45)
+                    pcall(function() fireclickdetector(detector) end)
+                    stats.fruit = stats.fruit + 1
+                end
+            end
+        end
+    end
+end
+
+task.spawn(function()
+    while true do
+        task.wait(0.1)
+        if AutoFruit then
+            for _, tree in ipairs(Trees) do
+                if not AutoFruit then break end
+                if tree and tree.Parent then
+                    pcall(function() collectFruit(tree) end)
+                end
+            end
+        end
+    end
+end)
+
+--// GUI — Coast (old)
+MainTab:CreateSection("Automation")
+
+MainTab:CreateCheckbox("Auto Buy", function(Value)
+    AutoBuy = Value
+    print("Auto Buy:", Value and "Enabled" or "Disabled")
+end)
+
+MainTab:CreateCheckbox("Auto Upgrade", function(Value)
+    AutoUpgrade = Value
+    print("Auto Upgrade:", Value and "Enabled" or "Disabled")
+end)
+
+MainTab:CreateCheckbox("Auto Fruit", function(Value)
+    AutoFruit = Value
+    print("Auto Fruit:", Value and "Enabled" or "Disabled")
+end)
+
+MainTab:CreateCheckbox("Auto Rebirth", function(Value)
+    AutoRebirth = Value
+    if Value and not getRebirthRemote() then
+        warn("Auto Rebirth: Rebirth remote not found in your tycoon!")
+        return
+    end
+    print("Auto Rebirth:", Value and "Enabled" or "Disabled")
+end)
+
+MainTab:CreateCheckbox("Auto Evolve (x10 income)", function(Value)
+    AutoEvolve = Value
+    if Value and not getEvolveRemote() then
+        warn("Auto Evolve: Evolve remote not found in your tycoon!")
+        return
+    end
+    print("Auto Evolve:", Value and "Enabled" or "Disabled")
+end)
+
+MainTab:CreateCheckbox("Auto Power Level", function(Value)
+    AutoPowerLevel = Value
+    print("Auto Power Level:", Value and "Enabled" or "Disabled")
+end)
+
+MainTab:CreateSection("Actions")
+
+MainTab:CreateButton("Pull All Levers (sewer)", function()
+    local n = pullAllLevers()
+    print(n > 0 and ("Pulled " .. n .. " lever(s) + grabbed sewer keys") or "No levers found (is the sewer loaded?)")
+end)
+
+MainTab:CreateButton("Vine Harvest", function()
+    print("Vine Harvest: Running...")
+    task.spawn(function()
+        local ok, err = doSewerRun()
+        print(ok and "Vine Harvest: Done! Levers pulled, keys grabbed, vine harvested." or ("Vine Harvest Failed: " .. tostring(err)))
+    end)
+end)
+
+MainTab:CreateButton("Teleport to Sewer Alien", function()
+    local ok, err = teleportToAlien()
+    print(ok and "Teleported to sewer alien (UFO)" or ("Teleport Failed: " .. tostring(err)))
+end)
+
+MainTab:CreateSection("Settings")
+
+MainTab:CreateSlider("Rebirth Gain Multiple", 10, 1, 10, 1, function(Value)
+    RebirthGainMultiple = Value / 10
+    print("Rebirth Gain Multiple set to:", RebirthGainMultiple)
+end)
+
+MainTab:CreateSlider("Min Investors to Rebirth", 100, 1, 0, 1, function(Value)
+    MinPotential = Value
+    print("Min Potential set to:", MinPotential)
+end)
+
+MainTab:CreateSlider("Evolve At %", 100, 50, 100, 100, function(Value)
+    EvolveAt = Value
+    print("Evolve At:", EvolveAt .. "%")
+end)
+
+--// LIVE STATUS PANEL (native ScreenGui — unchanged)
+task.spawn(function()
+    local parent = LocalPlayer:FindFirstChildOfClass("PlayerGui")
+    if not parent then
+        local okh, hui = pcall(function() return gethui() end)
+        parent = (okh and hui) or game:GetService("CoreGui")
+    end
+    pcall(function()
+        local old = parent:FindFirstChild("AutoStatusGui")
+        if old then old:Destroy() end
+    end)
+
     local gui = Instance.new("ScreenGui")
-    gui.Name = "Packet_GUI"
+    gui.Name = "AutoStatusGui"
     gui.ResetOnSpawn = false
-    gui.Parent = game:GetService("CoreGui")
-    
-    -- Main Frame
+    gui.IgnoreGuiInset = true
+    gui.DisplayOrder = 9999
+    gui.Parent = parent
+
     local frame = Instance.new("Frame")
-    frame.Size = window.Size
-    frame.Position = window.Position
-    frame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    frame.Size = UDim2.new(0, 200, 0, 168)
+    frame.Position = UDim2.new(0, 10, 0, 90)
+    frame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+    frame.BackgroundTransparency = 0.1
     frame.BorderSizePixel = 0
     frame.Active = true
-    frame.Draggable = true
     frame.Parent = gui
-    
-    -- Title Bar
-    local titleBar = Instance.new("Frame")
-    titleBar.Size = UDim2.new(1, 0, 0, 30)
-    titleBar.BackgroundColor3 = window.Color
-    titleBar.BorderSizePixel = 0
-    titleBar.Parent = frame
-    
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
+
     local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, -30, 1, 0)
-    title.Position = UDim2.new(0, 5, 0, 0)
-    title.BackgroundTransparency = 1
-    title.Text = window.Name
-    title.TextColor3 = Color3.new(1, 1, 1)
-    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.Size = UDim2.new(1, 0, 0, 24)
+    title.BackgroundColor3 = Color3.fromRGB(38, 40, 54)
+    title.BorderSizePixel = 0
+    title.Text = "AUTO STATUS"
+    title.TextColor3 = Color3.fromRGB(120, 235, 140)
     title.Font = Enum.Font.GothamBold
-    title.TextSize = 14
-    title.Parent = titleBar
-    
-    -- Close Button
-    local closeBtn = Instance.new("TextButton")
-    closeBtn.Size = UDim2.new(0, 30, 1, 0)
-    closeBtn.Position = UDim2.new(1, -30, 0, 0)
-    closeBtn.BackgroundTransparency = 1
-    closeBtn.Text = "X"
-    closeBtn.TextColor3 = Color3.new(1, 1, 1)
-    closeBtn.TextSize = 14
-    closeBtn.Parent = titleBar
-    closeBtn.MouseButton1Click:Connect(function()
-        gui:Destroy()
+    title.TextSize = 13
+    title.Parent = frame
+    Instance.new("UICorner", title).CornerRadius = UDim.new(0, 8)
+
+    local body = Instance.new("TextLabel")
+    body.Size = UDim2.new(1, -12, 1, -30)
+    body.Position = UDim2.new(0, 8, 0, 28)
+    body.BackgroundTransparency = 1
+    body.TextXAlignment = Enum.TextXAlignment.Left
+    body.TextYAlignment = Enum.TextYAlignment.Top
+    body.RichText = true
+    body.Text = "starting..."
+    body.TextColor3 = Color3.fromRGB(235, 235, 245)
+    body.Font = Enum.Font.Code
+    body.TextSize = 12
+    body.Parent = frame
+
+    local UIS = game:GetService("UserInputService")
+    local dragging, ds, sp
+    title.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1
+           or i.UserInputType == Enum.UserInputType.Touch then
+            dragging, ds, sp = true, i.Position, frame.Position
+            i.Changed:Connect(function()
+                if i.UserInputState == Enum.UserInputState.End then dragging = false end
+            end)
+        end
     end)
-    
-    -- Tab Container
-    local tabContainer = Instance.new("Frame")
-    tabContainer.Size = UDim2.new(1, 0, 1, -30)
-    tabContainer.Position = UDim2.new(0, 0, 0, 30)
-    tabContainer.BackgroundTransparency = 1
-    tabContainer.Parent = frame
-    
-    -- Scroll Frame
-    local scrollFrame = Instance.new("ScrollingFrame")
-    scrollFrame.Size = UDim2.new(1, -10, 1, -10)
-    scrollFrame.Position = UDim2.new(0, 5, 0, 5)
-    scrollFrame.BackgroundTransparency = 1
-    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-    scrollFrame.ScrollBarThickness = 6
-    scrollFrame.Parent = tabContainer
-    
-    local listLayout = Instance.new("UIListLayout")
-    listLayout.Padding = UDim.new(0, 5)
-    listLayout.Parent = scrollFrame
-    
-    window.Elements = {}
-    window.Tabs = {}
-    
-    function window:Tab(tabData)
-        local tab = {}
-        tab.Name = tabData.Name or "Tab"
-        
-        function tab:Divider(dividerData)
-            local div = Instance.new("Frame")
-            div.Size = UDim2.new(1, 0, 0, 25)
-            div.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-            div.Parent = scrollFrame
-            
-            local text = Instance.new("TextLabel")
-            text.Size = UDim2.new(1, 0, 1, 0)
-            text.BackgroundTransparency = 1
-            text.Text = dividerData.Text or ""
-            text.TextColor3 = Color3.new(0.8, 0.8, 0.8)
-            text.Font = Enum.Font.GothamBold
-            text.TextSize = 12
-            text.Parent = div
-            return div
+    UIS.InputChanged:Connect(function(i)
+        if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement
+           or i.UserInputType == Enum.UserInputType.Touch) then
+            local d = i.Position - ds
+            frame.Position = UDim2.new(sp.X.Scale, sp.X.Offset + d.X, sp.Y.Scale, sp.Y.Offset + d.Y)
         end
-        
-        function tab:Label(labelData)
-            local label = Instance.new("TextLabel")
-            label.Size = UDim2.new(1, 0, 0, 20)
-            label.BackgroundTransparency = 1
-            label.Text = labelData.Text or ""
-            label.TextColor3 = Color3.new(0.7, 0.7, 0.7)
-            label.TextXAlignment = Enum.TextXAlignment.Left
-            label.Font = Enum.Font.Gotham
-            label.TextSize = 12
-            label.Parent = scrollFrame
-            return label
-        end
-        
-        function tab:Button(buttonData)
-            local btn = Instance.new("TextButton")
-            btn.Size = UDim2.new(1, 0, 0, 30)
-            btn.BackgroundColor3 = window.Color
-            btn.Text = buttonData.Name or "Button"
-            btn.TextColor3 = Color3.new(1, 1, 1)
-            btn.Font = Enum.Font.GothamBold
-            btn.TextSize = 12
-            btn.Parent = scrollFrame
-            btn.MouseButton1Click:Connect(function()
-                if buttonData.Callback then
-                    buttonData.Callback()
-                end
-            end)
-            
-            function btn:ChangeName(newName)
-                btn.Text = newName
-            end
-            return btn
-        end
-        
-        function tab:Toggle(toggleData)
-            local frame = Instance.new("Frame")
-            frame.Size = UDim2.new(1, 0, 0, 30)
-            frame.BackgroundTransparency = 1
-            frame.Parent = scrollFrame
-            
-            local label = Instance.new("TextLabel")
-            label.Size = UDim2.new(1, -40, 1, 0)
-            label.BackgroundTransparency = 1
-            label.Text = toggleData.Name or "Toggle"
-            label.TextColor3 = Color3.new(0.8, 0.8, 0.8)
-            label.TextXAlignment = Enum.TextXAlignment.Left
-            label.Font = Enum.Font.Gotham
-            label.TextSize = 12
-            label.Parent = frame
-            
-            local toggleBtn = Instance.new("TextButton")
-            toggleBtn.Size = UDim2.new(0, 35, 1, 0)
-            toggleBtn.Position = UDim2.new(1, -35, 0, 0)
-            toggleBtn.BackgroundColor3 = toggleData.Value and window.Color or Color3.fromRGB(60, 60, 70)
-            toggleBtn.Text = toggleData.Value and "ON" or "OFF"
-            toggleBtn.TextColor3 = Color3.new(1, 1, 1)
-            toggleBtn.TextSize = 11
-            toggleBtn.Font = Enum.Font.GothamBold
-            toggleBtn.Parent = frame
-            
-            local value = toggleData.Value or false
-            
-            toggleBtn.MouseButton1Click:Connect(function()
-                value = not value
-                toggleBtn.BackgroundColor3 = value and window.Color or Color3.fromRGB(60, 60, 70)
-                toggleBtn.Text = value and "ON" or "OFF"
-                if toggleData.Callback then
-                    toggleData.Callback(value)
-                end
-            end)
-            
-            local toggleObject = {
-                ChangeName = function(self, newName)
-                    label.Text = newName
-                end,
-                SetValue = function(self, newValue)
-                    value = newValue
-                    toggleBtn.BackgroundColor3 = value and window.Color or Color3.fromRGB(60, 60, 70)
-                    toggleBtn.Text = value and "ON" or "OFF"
-                end
-            }
-            return toggleObject
-        end
-        
-        function tab:Section(sectionData)
-            local sectionFrame = Instance.new("Frame")
-            sectionFrame.Size = UDim2.new(1, 0, 0, 0)
-            sectionFrame.BackgroundColor3 = Color3.fromRGB(38, 38, 48)
-            sectionFrame.BorderSizePixel = 0
-            sectionFrame.Parent = scrollFrame
-            
-            local sectionTitle = Instance.new("TextLabel")
-            sectionTitle.Size = UDim2.new(1, 0, 0, 25)
-            sectionTitle.BackgroundColor3 = Color3.fromRGB(48, 48, 58)
-            sectionTitle.Text = sectionData.Name or "Section"
-            sectionTitle.TextColor3 = Color3.new(1, 1, 1)
-            sectionTitle.Font = Enum.Font.GothamBold
-            sectionTitle.TextSize = 12
-            sectionTitle.Parent = sectionFrame
-            
-            local content = Instance.new("Frame")
-            content.Size = UDim2.new(1, -10, 0, 0)
-            content.Position = UDim2.new(0, 5, 0, 25)
-            content.BackgroundTransparency = 1
-            content.Parent = sectionFrame
-            
-            local contentLayout = Instance.new("UIListLayout")
-            contentLayout.Padding = UDim.new(0, 5)
-            contentLayout.Parent = content
-            
-            local section = {}
-            
-            function section:Label(labelData)
-                local label = Instance.new("TextLabel")
-                label.Size = UDim2.new(1, 0, 0, 20)
-                label.BackgroundTransparency = 1
-                label.Text = labelData.Text or ""
-                label.TextColor3 = Color3.new(0.7, 0.7, 0.7)
-                label.TextXAlignment = Enum.TextXAlignment.Left
-                label.Font = Enum.Font.Gotham
-                label.TextSize = 11
-                label.Parent = content
-                return label
-            end
-            
-            function section:Button(buttonData)
-                local btn = Instance.new("TextButton")
-                btn.Size = UDim2.new(1, 0, 0, 25)
-                btn.BackgroundColor3 = window.Color
-                btn.Text = buttonData.Name or "Button"
-                btn.TextColor3 = Color3.new(1, 1, 1)
-                btn.Font = Enum.Font.GothamBold
-                btn.TextSize = 11
-                btn.Parent = content
-                btn.MouseButton1Click:Connect(function()
-                    if buttonData.Callback then
-                        buttonData.Callback()
-                    end
-                end)
-                return btn
-            end
-            
-            function section:Divider(dividerData)
-                local div = Instance.new("Frame")
-                div.Size = UDim2.new(1, 0, 0, 20)
-                div.BackgroundColor3 = Color3.fromRGB(55, 55, 65)
-                div.Parent = content
-                
-                local text = Instance.new("TextLabel")
-                text.Size = UDim2.new(1, 0, 1, 0)
-                text.BackgroundTransparency = 1
-                text.Text = dividerData.Text or ""
-                text.TextColor3 = Color3.new(0.7, 0.7, 0.7)
-                text.Font = Enum.Font.Gotham
-                text.TextSize = 11
-                text.Parent = div
-                return div
-            end
-            
-            function section:Toggle(toggleData)
-                local frame = Instance.new("Frame")
-                frame.Size = UDim2.new(1, 0, 0, 25)
-                frame.BackgroundTransparency = 1
-                frame.Parent = content
-                
-                local label = Instance.new("TextLabel")
-                label.Size = UDim2.new(1, -35, 1, 0)
-                label.BackgroundTransparency = 1
-                label.Text = toggleData.Name or "Toggle"
-                label.TextColor3 = Color3.new(0.7, 0.7, 0.7)
-                label.TextXAlignment = Enum.TextXAlignment.Left
-                label.Font = Enum.Font.Gotham
-                label.TextSize = 11
-                label.Parent = frame
-                
-                local toggleBtn = Instance.new("TextButton")
-                toggleBtn.Size = UDim2.new(0, 30, 1, 0)
-                toggleBtn.Position = UDim2.new(1, -30, 0, 0)
-                toggleBtn.BackgroundColor3 = toggleData.Value and window.Color or Color3.fromRGB(60, 60, 70)
-                toggleBtn.Text = toggleData.Value and "ON" or "OFF"
-                toggleBtn.TextColor3 = Color3.new(1, 1, 1)
-                toggleBtn.TextSize = 9
-                toggleBtn.Font = Enum.Font.GothamBold
-                toggleBtn.Parent = frame
-                
-                local value = toggleData.Value or false
-                
-                toggleBtn.MouseButton1Click:Connect(function()
-                    value = not value
-                    toggleBtn.BackgroundColor3 = value and window.Color or Color3.fromRGB(60, 60, 70)
-                    toggleBtn.Text = value and "ON" or "OFF"
-                    if toggleData.Callback then
-                        toggleData.Callback(value)
-                    end
-                end)
-                return {}
-            end
-            
-            -- Update height
-            local function updateHeight()
-                task.wait()
-                sectionFrame.Size = UDim2.new(1, 0, 0, 25 + content.AbsoluteContentSize.Y + 10)
-            end
-            content:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateHeight)
-            task.spawn(updateHeight)
-            
-            return section
-        end
-        
-        -- Update scroll canvas
-        local function updateCanvas()
-            task.wait()
-            scrollFrame.CanvasSize = UDim2.new(0, 0, 0, scrollFrame.AbsoluteContentSize.Y + 10)
-        end
-        scrollFrame:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvas)
-        task.spawn(updateCanvas)
-        
-        return tab
+    end)
+
+    local RunService = game:GetService("RunService")
+    local frames, fps, fpsT = 0, 0, tick()
+    RunService.RenderStepped:Connect(function()
+        frames = frames + 1
+        if tick() - fpsT >= 1 then fps, frames, fpsT = frames, 0, tick() end
+    end)
+
+    local function on(b) return b and "<font color='#7CFF7C'>ON</font>" or "<font color='#777'>off</font>" end
+
+    while gui.Parent do
+        local cashStr = "?"
+        local ls = LocalPlayer:FindFirstChild("leaderstats")
+        local c  = ls and ls:FindFirstChild("Cash")
+        if c then cashStr = tostring(c.Value) end
+        body.Text = string.format(
+            "FPS:  %d\nCash: %s\n"
+          .. "Buys:  %d  %s\nUpgr:  %d  %s\nFruit: %d  %s\nReb:   %d  %s\nEvo:   %d  %s",
+            fps, cashStr,
+            stats.buys,     on(AutoBuy),
+            stats.upgrades, on(AutoUpgrade),
+            stats.fruit,    on(AutoFruit),
+            stats.rebirths, on(AutoRebirth),
+            stats.evolves,  on(AutoEvolve)
+        )
+        task.wait(0.25)
     end
-    
-    return window
-end
+end)
 
-function Packet:Notification(notification)
-    notification = notification or {}
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = notification.Title or "Packet",
-        Text = notification.Content or notification.Description or "",
-        Duration = notification.Duration or 3
-    })
-end
-
-function Packet:Notification2()
-    -- Placeholder
-end
-
-return Packet
+print("Vibe Code Central / Sell Lemons — Loaded!")
