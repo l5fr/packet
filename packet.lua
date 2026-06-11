@@ -1,52 +1,72 @@
-local Packet = InitScreen()
-function Packet:Window(Window)
-	Window = GetType(Window,{},"table")
-	Window.Name = GetType(Window.Name,"Window","string")
-	Window.Color = GetType(Window.Color,Color3.new(1,0.5,0.25),"Color3")
-	Window.Size = GetType(Window.Size,UDim2.new(0,496,0,496),"UDim2")
-	Window.Position = GetType(Window.Position,UDim2.new(0.5,-248,0.5,-248),"UDim2")
-	Window.Enabled = GetType(Window.Enabled,true,"boolean")
+local Packet = loadstring(game:HttpGet("https://raw.githubusercontent.com/l5fr/packet/main/packet.lua"))()
 
-	Window.RainbowHue = 0
-	Window.Colorable = {}
-	Window.Elements = {}
-	Window.Flags = {}
+-- Create the GUI Window
+local Window = Packet:Window({
+    Name = "Packet 1.1",
+    Enabled = true,
+    Color = Color3.new(1, 0.5, 0.25),
+    Size = UDim2.new(0, 496, 0, 496),
+    Position = UDim2.new(0.5, -248, 0.5, -248)
+})
 
-	local WindowAsset = InitWindow(Packet.ScreenAsset,Window)
-	function Window:Tab(Tab)
-		Tab = GetType(Tab,{},"table")
-		Tab.Name = GetType(Tab.Name,"Tab","string")
-		local ChooseTab = InitTab(Packet.ScreenAsset,WindowAsset,Window,Tab)
-        
-        -- ... (rest of the function stays the same, just change Bracket.ScreenAsset to Packet.ScreenAsset throughout)
+-- Create a Tab
+local MainTab = Window:Tab({Name = "Main"})
+
+-- Add a Divider
+MainTab:Divider({Text = "Auto Features", Side = "Left"})
+
+-- Add a Toggle
+local AutoBuyToggle = MainTab:Toggle({
+    Name = "Auto Buy: OFF",
+    Side = "Left",
+    Value = false,
+    Callback = function(Value)
+        local status = Value and "ON" or "OFF"
+        AutoBuyToggle:ChangeName("Auto Buy: " .. status)
+        Packet:Notification({
+            Title = "Auto Buy",
+            Content = Value and "Enabled" or "Disabled",
+            Duration = 2
+        })
     end
-    return Window
-end
+})
 
-function Packet:TableToColor(Table)
-	if type(Table) ~= "table" then return Table end
-	return Color3.fromHSV(Table[1],Table[2],Table[3])
-end
+-- Add another Toggle
+local AutoUpgradeToggle = MainTab:Toggle({
+    Name = "Auto Upgrade: OFF",
+    Side = "Left",
+    Value = false,
+    Callback = function(Value)
+        local status = Value and "ON" or "OFF"
+        AutoUpgradeToggle:ChangeName("Auto Upgrade: " .. status)
+        Packet:Notification({
+            Title = "Auto Upgrade",
+            Content = Value and "Enabled" or "Disabled",
+            Duration = 2
+        })
+    end
+})
 
-function Packet:Notification(Notification)
-	Notification = GetType(Notification,{},"table")
-	Notification.Title = GetType(Notification.Title,"Title","string")
-	Notification.Description = GetType(Notification.Description,"Description","string")
+-- Add a Button
+MainTab:Button({
+    Name = "Click Me",
+    Side = "Left",
+    Callback = function()
+        Packet:Notification({
+            Title = "Button",
+            Content = "You clicked the button!",
+            Duration = 2
+        })
+    end
+})
 
-	local NotificationAsset = GetAsset("Notification/ND")
-	NotificationAsset.Parent = Packet.ScreenAsset.NDHandle
-    -- ... rest stays the same
-end
+-- Add a Section on the Right side
+local StatusSection = MainTab:Section({Name = "Status", Side = "Right"})
+StatusSection:Label({Text = "Ready to go!"})
 
-function Packet:Notification2(Notification)
-	Notification = GetType(Notification,{},"table")
-	Notification.Title = GetType(Notification.Title,"Title","string")
-	Notification.Duration = GetType(Notification.Duration,5,"number")
-	Notification.Color = GetType(Notification.Color,Color3.new(1,0.5,0.25),"Color3")
-
-	local NotificationAsset = GetAsset("Notification/NL")
-	NotificationAsset.Parent = Packet.ScreenAsset.NLHandle
-    -- ... rest stays the same
-end
-
-return Packet
+-- Success notification
+Packet:Notification({
+    Title = "Packet 1.1",
+    Content = "GUI Loaded Successfully!",
+    Duration = 3
+})
