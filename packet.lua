@@ -1,25 +1,20 @@
--- Load Packet Library from GitHub
+-- Load the Packet library (which is actually the Bracket library)
 local Packet = loadstring(game:HttpGet("https://raw.githubusercontent.com/l5fr/packet/main/packet.lua"))()
 
--- Check if loaded correctly
 if not Packet then
     game:GetService("StarterGui"):SetCore("SendNotification", {
         Title = "Error",
-        Text = "Failed to load Packet library! Make sure the GitHub link is correct.",
+        Text = "Failed to load Packet library!",
         Duration = 5
     })
     return
 end
 
--- Call notification functions safely
-pcall(function() Packet:Notification() end)
-pcall(function() Packet:Notification2() end)
-
---// Services
+-- Now add ALL your auto-farm features
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
---// Find Tycoon
+-- Find Tycoon
 local userTycoon = (function()
     for _, v in pairs(workspace:GetChildren()) do
         if v:IsA("Folder") and v.Name:match("Tycoon%d") then
@@ -30,18 +25,7 @@ local userTycoon = (function()
     end
 end)()
 
--- If no tycoon found, show error and exit
-if not userTycoon then
-    pcall(function()
-        Packet:Notification({
-            Title = "Error",
-            Content = "Tycoon not found! Make sure you're in your tycoon.",
-            Duration = 5
-        })
-    end)
-end
-
---// Variables
+-- Variables
 local AutoBuy = false
 local AutoUpgrade = false
 local AutoFruit = false
@@ -49,27 +33,23 @@ local AutoRebirth = false
 local AutoEvolve = false
 local AutoPowerLevel = false
 
--- live counters for the status panel
+-- Counters
 local stats = { buys = 0, upgrades = 0, fruit = 0, rebirths = 0, evolves = 0 }
 
---// Notification function
+-- Notification function
 local function Notify(title, content)
     pcall(function()
-        Packet:Notification({
-            Title = title,
-            Content = content,
-            Duration = 3
-        })
+        Packet:Notification({ Title = title, Content = content, Duration = 3 })
     end)
 end
 
--- Function to update toggle button names
+-- Update toggle button names
 local function UpdateToggleName(button, name, value)
     local status = value and "ON" or "OFF"
     pcall(function() button:ChangeName(name .. ": " .. status) end)
 end
 
--- FASTER Auto Buy
+-- AUTO BUY
 local function buyAllAffordable()
     if not userTycoon then return end
     local purchases = userTycoon:FindFirstChild("Purchases")
@@ -93,13 +73,11 @@ end
 task.spawn(function()
     while true do
         task.wait(0.05)
-        if AutoBuy and userTycoon then
-            pcall(buyAllAffordable)
-        end
+        if AutoBuy and userTycoon then pcall(buyAllAffordable) end
     end
 end)
 
--- FASTER Auto Upgrade
+-- AUTO UPGRADE
 local upgradeRemotes = {}
 local upgradeLevel = {}
 local lastUpgradeScan = 0
@@ -141,7 +119,7 @@ task.spawn(function()
     end
 end)
 
--- Auto Power Level
+-- AUTO POWER LEVEL
 local function getPowerLevelRemote()
     if not userTycoon then return nil end
     local remotes = userTycoon:FindFirstChild("Remotes")
@@ -153,14 +131,12 @@ task.spawn(function()
         task.wait(0.25)
         if AutoPowerLevel then
             local remote = getPowerLevelRemote()
-            if remote then
-                pcall(function() remote:InvokeServer() end)
-            end
+            if remote then pcall(function() remote:InvokeServer() end) end
         end
     end
 end)
 
--- Auto Rebirth
+-- AUTO REBIRTH
 local RebirthGainMultiple = 1.0
 local MinPotential = 1
 local RebirthCooldown = 2
@@ -250,7 +226,7 @@ task.spawn(function()
     end
 end)
 
--- Auto Evolve
+-- AUTO EVOLVE
 local EvolveAt = 100
 local EvolveCooldown = 2
 local EvolveTimeout = 8
@@ -309,7 +285,7 @@ task.spawn(function()
     end
 end)
 
--- Pull All Levers
+-- SEWER UTILITIES
 local function pullAllLevers()
     local char = LocalPlayer.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -341,39 +317,26 @@ local function pullAllLevers()
     return pulled
 end
 
--- Sewer Run
 local function touchPart(hrp, part)
-    pcall(function()
-        firetouchinterest(hrp, part, 0)
-        firetouchinterest(hrp, part, 1)
-    end)
+    pcall(function() firetouchinterest(hrp, part, 0) firetouchinterest(hrp, part, 1) end)
 end
 
 local function doSewerRun()
     local char = LocalPlayer.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp then 
-        Notify("Vine Harvest", "Failed: No character")
-        return false, "no character" 
-    end
+    if not hrp then Notify("Vine Harvest", "Failed: No character"); return false end
     local map = workspace:FindFirstChild("Map")
     local sewer = map and map:FindFirstChild("Sewer")
-    if not sewer then 
-        Notify("Vine Harvest", "Failed: Sewer not loaded")
-        return false, "sewer not loaded" 
-    end
+    if not sewer then Notify("Vine Harvest", "Failed: Sewer not loaded"); return false end
+    
     for _, o in ipairs(sewer:GetDescendants()) do
-        if o:IsA("BasePart") and string.find(string.lower(o.Name), "lever", 1, true) then
-            touchPart(hrp, o)
-        end
+        if o:IsA("BasePart") and string.find(string.lower(o.Name), "lever", 1, true) then touchPart(hrp, o) end
     end
     for _, folderName in ipairs({ "CashVine", "SewerAlien" }) do
         local folder = sewer:FindFirstChild(folderName)
         if folder then
             for _, o in ipairs(folder:GetDescendants()) do
-                if o:IsA("BasePart") and (o.Name == "VineKey" or o.Name == "UFOKey") then
-                    touchPart(hrp, o)
-                end
+                if o:IsA("BasePart") and (o.Name == "VineKey" or o.Name == "UFOKey") then touchPart(hrp, o) end
             end
         end
     end
@@ -382,9 +345,7 @@ local function doSewerRun()
     if cashVine then
         local vineDoor = cashVine:FindFirstChild("VineDoor")
         if vineDoor then
-            for _, o in ipairs(vineDoor:GetDescendants()) do
-                if o:IsA("BasePart") then touchPart(hrp, o) end
-            end
+            for _, o in ipairs(vineDoor:GetDescendants()) do if o:IsA("BasePart") then touchPart(hrp, o) end end
         end
     end
     task.wait(0.3)
@@ -394,76 +355,51 @@ local function doSewerRun()
             local pivot = vineModel:GetPivot()
             pcall(function() hrp.CFrame = pivot + Vector3.new(0, 3, 0) end)
             task.wait(0.2)
-            for _, o in ipairs(vineModel:GetDescendants()) do
-                if o:IsA("BasePart") then touchPart(hrp, o) end
-            end
+            for _, o in ipairs(vineModel:GetDescendants()) do if o:IsA("BasePart") then touchPart(hrp, o) end end
         end
     end
-    Notify("Vine Harvest", "Completed! Levers pulled, keys grabbed, vine harvested.")
+    Notify("Vine Harvest", "Completed!")
     return true
 end
 
--- Teleport to Sewer Alien
 local SEWER_ALIEN_POS = Vector3.new(-42, -41, 180)
 local function teleportToAlien()
     local char = LocalPlayer.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp then 
-        Notify("Teleport", "Failed: No character")
-        return false, "no character" 
-    end
+    if not hrp then Notify("Teleport", "Failed: No character"); return false end
     pcall(function() hrp.CFrame = CFrame.new(SEWER_ALIEN_POS) end)
     Notify("Teleport", "Teleported to Sewer Alien")
     return true
 end
 
--- Auto Fruit (Lemon Trees)
+-- AUTO FRUIT (LEMON TREES)
 local Trees = {}
 
 local function addTree(obj)
     if obj:IsA("Model") and obj.Name == "LemonTree" then
-        if not table.find(Trees, obj) then
-            table.insert(Trees, obj)
-        end
+        if not table.find(Trees, obj) then table.insert(Trees, obj) end
     end
 end
 
 local function removeTree(obj)
     local index = table.find(Trees, obj)
-    if index then
-        table.remove(Trees, index)
-    end
+    if index then table.remove(Trees, index) end
 end
 
-for _, v in ipairs(workspace:GetDescendants()) do
-    addTree(v)
-end
-
+for _, v in ipairs(workspace:GetDescendants()) do addTree(v) end
 workspace.DescendantAdded:Connect(addTree)
 workspace.DescendantRemoving:Connect(removeTree)
 
-local function noCollisionTree(tree)
+local function collectFruit(tree)
     for _, obj in ipairs(tree:GetDescendants()) do
-        if obj:IsA("BasePart") then
-            obj.CanCollide = false
-        end
+        if obj:IsA("BasePart") then obj.CanCollide = false end
     end
-end
-
-local function teleportToTree(tree)
     local character = LocalPlayer.Character
-    if not character then return false end
+    if not character then return end
     local hrp = character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return false end
+    if not hrp then return end
     local cf = tree:GetPivot()
     hrp.CFrame = cf + Vector3.new(0, 5, 0)
-    return true
-end
-
-local function collectFruit(tree)
-    noCollisionTree(tree)
-    local success = teleportToTree(tree)
-    if not success then return end
     for _, obj in ipairs(tree:GetDescendants()) do
         if obj:IsA("BasePart") and obj.Name == "Fruit" then
             obj.CanCollide = false
@@ -472,9 +408,7 @@ local function collectFruit(tree)
                 local detector = clickPart:FindFirstChildOfClass("ClickDetector")
                 if detector then
                     task.wait(0.45)
-                    pcall(function()
-                        fireclickdetector(detector)
-                    end)
+                    pcall(function() fireclickdetector(detector) end)
                     stats.fruit = stats.fruit + 1
                 end
             end
@@ -488,17 +422,13 @@ task.spawn(function()
         if AutoFruit then
             for _, tree in ipairs(Trees) do
                 if not AutoFruit then break end
-                if tree and tree.Parent then
-                    pcall(function()
-                        collectFruit(tree)
-                    end)
-                end
+                if tree and tree.Parent then pcall(function() collectFruit(tree) end) end
             end
         end
     end
 end)
 
---// PACKET GUI WINDOW
+-- CREATE GUI
 local Window = Packet:Window({
     Name = "Packet 1.1",
     Enabled = true,
@@ -507,124 +437,57 @@ local Window = Packet:Window({
     Position = UDim2.new(0.5, -248, 0.5, -248)
 })
 
---// MAIN TAB
 local MainTab = Window:Tab({Name = "Main"})
 
 MainTab:Divider({Text = "Auto Features", Side = "Left"})
 
--- Auto Buy Toggle
 local AutoBuyToggle = MainTab:Toggle({
-    Name = "Auto Buy: OFF",
-    Side = "Left",
-    Value = false,
-    Callback = function(Value)
-        AutoBuy = Value
-        UpdateToggleName(AutoBuyToggle, "Auto Buy", Value)
-        Notify("Auto Buy", Value and "Enabled" or "Disabled")
-    end
+    Name = "Auto Buy: OFF", Side = "Left", Value = false,
+    Callback = function(Value) AutoBuy = Value; UpdateToggleName(AutoBuyToggle, "Auto Buy", Value); Notify("Auto Buy", Value and "Enabled" or "Disabled") end
 })
 
--- Auto Upgrade Toggle
 local AutoUpgradeToggle = MainTab:Toggle({
-    Name = "Auto Upgrade: OFF",
-    Side = "Left",
-    Value = false,
-    Callback = function(Value)
-        AutoUpgrade = Value
-        UpdateToggleName(AutoUpgradeToggle, "Auto Upgrade", Value)
-        Notify("Auto Upgrade", Value and "Enabled" or "Disabled")
-    end
+    Name = "Auto Upgrade: OFF", Side = "Left", Value = false,
+    Callback = function(Value) AutoUpgrade = Value; UpdateToggleName(AutoUpgradeToggle, "Auto Upgrade", Value); Notify("Auto Upgrade", Value and "Enabled" or "Disabled") end
 })
 
--- Auto Fruit Toggle
 local AutoFruitToggle = MainTab:Toggle({
-    Name = "Auto Fruit: OFF",
-    Side = "Left",
-    Value = false,
-    Callback = function(Value)
-        AutoFruit = Value
-        UpdateToggleName(AutoFruitToggle, "Auto Fruit", Value)
-        Notify("Auto Fruit", Value and "Enabled" or "Disabled")
-    end
+    Name = "Auto Fruit: OFF", Side = "Left", Value = false,
+    Callback = function(Value) AutoFruit = Value; UpdateToggleName(AutoFruitToggle, "Auto Fruit", Value); Notify("Auto Fruit", Value and "Enabled" or "Disabled") end
 })
 
--- Auto Rebirth Toggle
 local AutoRebirthToggle = MainTab:Toggle({
-    Name = "Auto Rebirth: OFF",
-    Side = "Left",
-    Value = false,
-    Callback = function(Value)
-        AutoRebirth = Value
-        UpdateToggleName(AutoRebirthToggle, "Auto Rebirth", Value)
-        Notify("Auto Rebirth", Value and "Enabled" or "Disabled")
-    end
+    Name = "Auto Rebirth: OFF", Side = "Left", Value = false,
+    Callback = function(Value) AutoRebirth = Value; UpdateToggleName(AutoRebirthToggle, "Auto Rebirth", Value); Notify("Auto Rebirth", Value and "Enabled" or "Disabled") end
 })
 
--- Auto Evolve Toggle
 local AutoEvolveToggle = MainTab:Toggle({
-    Name = "Auto Evolve: OFF",
-    Side = "Left",
-    Value = false,
-    Callback = function(Value)
-        AutoEvolve = Value
-        UpdateToggleName(AutoEvolveToggle, "Auto Evolve", Value)
-        Notify("Auto Evolve", Value and "Enabled (evolves at full progress)" or "Disabled")
-    end
+    Name = "Auto Evolve: OFF", Side = "Left", Value = false,
+    Callback = function(Value) AutoEvolve = Value; UpdateToggleName(AutoEvolveToggle, "Auto Evolve", Value); Notify("Auto Evolve", Value and "Enabled" or "Disabled") end
 })
 
--- Auto Power Level Toggle
 local AutoPowerLevelToggle = MainTab:Toggle({
-    Name = "Auto Power Level: OFF",
-    Side = "Left",
-    Value = false,
-    Callback = function(Value)
-        AutoPowerLevel = Value
-        UpdateToggleName(AutoPowerLevelToggle, "Auto Power Level", Value)
-        Notify("Auto Power Level", Value and "Enabled" or "Disabled")
-    end
+    Name = "Auto Power Level: OFF", Side = "Left", Value = false,
+    Callback = function(Value) AutoPowerLevel = Value; UpdateToggleName(AutoPowerLevelToggle, "Auto Power Level", Value); Notify("Auto Power Level", Value and "Enabled" or "Disabled") end
 })
 
 MainTab:Divider({Text = "Sewer Utilities", Side = "Left"})
 
-MainTab:Button({
-    Name = "Pull All Levers",
-    Side = "Left",
-    Callback = function()
-        pullAllLevers()
-    end
-})
+MainTab:Button({Name = "Pull All Levers", Side = "Left", Callback = function() pullAllLevers() end})
+MainTab:Button({Name = "Vine Harvest", Side = "Left", Callback = function() task.spawn(doSewerRun) end})
+MainTab:Button({Name = "Teleport to Sewer Alien", Side = "Left", Callback = function() teleportToAlien() end})
 
-MainTab:Button({
-    Name = "Vine Harvest",
-    Side = "Left",
-    Callback = function()
-        task.spawn(doSewerRun)
-    end
-})
-
-MainTab:Button({
-    Name = "Teleport to Sewer Alien",
-    Side = "Left",
-    Callback = function()
-        teleportToAlien()
-    end
-})
-
--- Status Section on Right side
 local StatusSection = MainTab:Section({Name = "Status Panel", Side = "Right"})
 local StatusLabel = StatusSection:Label({Text = "Loading..."})
 
---// LIVE STATUS PANEL (Separate draggable GUI)
+-- LIVE STATUS PANEL
 task.spawn(function()
     local parent = LocalPlayer:FindFirstChildOfClass("PlayerGui")
     if not parent then
         local okh, hui = pcall(function() return gethui() end)
         parent = (okh and hui) or game:GetService("CoreGui")
     end
-    pcall(function()
-        local old = parent:FindFirstChild("AutoStatusGui")
-        if old then old:Destroy() end
-    end)
+    pcall(function() local old = parent:FindFirstChild("AutoStatusGui"); if old then old:Destroy() end end)
 
     local gui = Instance.new("ScreenGui")
     gui.Name = "AutoStatusGui"
@@ -643,7 +506,6 @@ task.spawn(function()
     frame.Parent = gui
     Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
 
-    -- Add "Packet 1.1" text in corner
     local packetLabel = Instance.new("TextLabel")
     packetLabel.Size = UDim2.new(0, 80, 0, 18)
     packetLabel.Position = UDim2.new(1, -85, 0, 5)
@@ -679,15 +541,12 @@ task.spawn(function()
     body.TextSize = 12
     body.Parent = frame
 
-    -- drag functionality
     local UIS = game:GetService("UserInputService")
     local dragging, ds, sp
     title.InputBegan:Connect(function(i)
         if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
             dragging, ds, sp = true, i.Position, frame.Position
-            i.Changed:Connect(function()
-                if i.UserInputState == Enum.UserInputState.End then dragging = false end
-            end)
+            i.Changed:Connect(function() if i.UserInputState == Enum.UserInputState.End then dragging = false end end)
         end
     end)
     UIS.InputChanged:Connect(function(i)
@@ -697,7 +556,6 @@ task.spawn(function()
         end
     end)
 
-    -- FPS counter
     local RunService = game:GetService("RunService")
     local frames, fps, fpsT = 0, 0, tick()
     RunService.RenderStepped:Connect(function()
@@ -713,23 +571,11 @@ task.spawn(function()
         local c = ls and ls:FindFirstChild("Cash")
         if c then cashStr = tostring(c.Value) end
 
-        local statusText = string.format(
-            "FPS: %d\nCash: %s\n\nBuys: %d (%s)\nUpgr: %d (%s)\nFruit: %d (%s)\nReb: %d (%s)\nEvo: %d (%s)",
-            fps, cashStr,
-            stats.buys, on(AutoBuy),
-            stats.upgrades, on(AutoUpgrade),
-            stats.fruit, on(AutoFruit),
-            stats.rebirths, on(AutoRebirth),
-            stats.evolves, on(AutoEvolve)
-        )
-        
-        body.Text = statusText
-        pcall(function() StatusLabel:ChangeText(statusText) end)
-        
+        body.Text = string.format("FPS: %d\nCash: %s\n\nBuys: %d (%s)\nUpgr: %d (%s)\nFruit: %d (%s)\nReb: %d (%s)\nEvo: %d (%s)",
+            fps, cashStr, stats.buys, on(AutoBuy), stats.upgrades, on(AutoUpgrade), stats.fruit, on(AutoFruit), stats.rebirths, on(AutoRebirth), stats.evolves, on(AutoEvolve))
+        pcall(function() StatusLabel:ChangeText(body.Text) end)
         task.wait(0.25)
     end
 end)
 
--- Initial load notification
 Notify("Packet 1.1", "Tycoon Autofarm Loaded Successfully")
-pcall(function() Packet:Notification2() end)
