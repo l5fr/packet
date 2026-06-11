@@ -1,5 +1,5 @@
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/bloodwall/-back-ups-for-libs/main/coast%20old"))()
-local MainTab = Library:CreateTab("Packet / Sell Lemons", "By Claude")
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/AZYsGithub/DrRay-UI-Library/main/DrRay.lua"))()
+local MainTab = Library.newTab("Packet / Sell Lemons", "")
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -380,73 +380,69 @@ task.spawn(function()
     end
 end)
 
--- GUI
-MainTab:CreateSection("Automation")
+--// GUI
+MainTab.newSection("Automation")
 
-MainTab:CreateCheckbox("Auto Buy", function(Value)
-    AutoBuy = Value
+MainTab.newToggle("Auto Buy", "Automatically buys all affordable items", false, function(v)
+    AutoBuy = v
 end)
 
-MainTab:CreateCheckbox("Auto Upgrade", function(Value)
-    AutoUpgrade = Value
+MainTab.newToggle("Auto Upgrade", "Automatically upgrades all machines", false, function(v)
+    AutoUpgrade = v
 end)
 
-MainTab:CreateCheckbox("Auto Fruit", function(Value)
-    AutoFruit = Value
+MainTab.newToggle("Auto Fruit", "Automatically collects lemon fruit", false, function(v)
+    AutoFruit = v
 end)
 
-MainTab:CreateCheckbox("Auto Rebirth", function(Value)
-    AutoRebirth = Value
-    if Value and not getRebirthRemote() then
-        warn("Rebirth remote not found!")
-    end
+MainTab.newToggle("Auto Rebirth", "Automatically rebirths when worth it", false, function(v)
+    AutoRebirth = v
+    if v and not getRebirthRemote() then warn("Rebirth remote not found!") end
 end)
 
-MainTab:CreateCheckbox("Auto Evolve (x10 income)", function(Value)
-    AutoEvolve = Value
-    if Value and not getEvolveRemote() then
-        warn("Evolve remote not found!")
-    end
+MainTab.newToggle("Auto Evolve (x10 income)", "Automatically evolves at full progress", false, function(v)
+    AutoEvolve = v
+    if v and not getEvolveRemote() then warn("Evolve remote not found!") end
 end)
 
-MainTab:CreateCheckbox("Auto Power Level", function(Value)
-    AutoPowerLevel = Value
+MainTab.newToggle("Auto Power Level", "Automatically upgrades power level", false, function(v)
+    AutoPowerLevel = v
 end)
 
-MainTab:CreateSection("Actions")
+MainTab.newSection("Actions")
 
-MainTab:CreateButton("Pull All Levers (sewer)", function()
+MainTab.newButton("Pull All Levers (sewer)", "Pulls all sewer levers", function()
     local n = pullAllLevers()
     print(n > 0 and ("Pulled " .. n .. " levers") or "No levers found")
 end)
 
-MainTab:CreateButton("Vine Harvest", function()
+MainTab.newButton("Vine Harvest", "Runs the full sewer vine harvest", function()
     task.spawn(function()
         local ok, err = doSewerRun()
         print(ok and "Vine Harvest done!" or ("Failed: " .. tostring(err)))
     end)
 end)
 
-MainTab:CreateButton("Teleport to Sewer Alien", function()
+MainTab.newButton("Teleport to Sewer Alien", "Teleports to the UFO alien", function()
     local ok, err = teleportToAlien()
     print(ok and "Teleported!" or ("Failed: " .. tostring(err)))
 end)
 
-MainTab:CreateSection("Settings")
+MainTab.newSection("Settings")
 
-MainTab:CreateSlider("Rebirth Gain Multiple", 10, 1, 10, 1, function(Value)
-    RebirthGainMultiple = Value / 10
+MainTab.newSlider("Rebirth Gain Multiple", "Rebirth when investors >= current x this", 1, 10, 1, function(v)
+    RebirthGainMultiple = v / 10
 end)
 
-MainTab:CreateSlider("Min Investors to Rebirth", 100, 1, 0, 1, function(Value)
-    MinPotential = Value
+MainTab.newSlider("Min Investors to Rebirth", "Minimum investors needed to rebirth", 1, 100, 1, function(v)
+    MinPotential = v
 end)
 
-MainTab:CreateSlider("Evolve At %", 100, 50, 100, 100, function(Value)
-    EvolveAt = Value
+MainTab.newSlider("Evolve At %", "Evolve when progress reaches this %", 50, 100, 100, function(v)
+    EvolveAt = v
 end)
 
--- Status Panel
+--// Status Panel
 task.spawn(function()
     local parent = LocalPlayer:FindFirstChildOfClass("PlayerGui")
     if not parent then
