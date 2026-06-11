@@ -7,7 +7,7 @@ local PlayerService = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 
 local Debug,LocalPlayer = false,PlayerService.LocalPlayer
-local MainAssetFolder = Debug and ReplicatedStorage.BracketV32
+local MainAssetFolder = Debug and ReplicatedStorage.PacketV32
 	or InsertService:LoadLocalAsset("rbxassetid://9153139105")
 
 	local function GetAsset(AssetPath)
@@ -157,15 +157,10 @@ local function InitToolTip(Parent,ScreenAsset,Text)
 	end)
 end
 local function InitScreen()
-	local ScreenAsset = GetAsset("Screen/Bracket")
+	local ScreenAsset = GetAsset("Screen/Packet")
 	if not Debug then sethiddenproperty(ScreenAsset,"OnTopOfCoreBlur",true) end
-	ScreenAsset.Name = "Bracket " .. game:GetService("HttpService"):GenerateGUID(false)
+	ScreenAsset.Name = "Packet " .. game:GetService("HttpService"):GenerateGUID(false)
 	ScreenAsset.Parent = Debug and LocalPlayer:FindFirstChildOfClass("PlayerGui") or CoreGui
-	--[[if Debug then
-		ScreenAsset.Parent = LocalPlayer.PlayerGui
-	else
-		Parvus.Utilities.Misc:HideObject(ScreenAsset)
-	end]]
 	return {ScreenAsset = ScreenAsset}
 end
 local function InitWindow(ScreenAsset,Window)
@@ -194,11 +189,6 @@ local function InitWindow(ScreenAsset,Window)
 	end)
 	RunService.RenderStepped:Connect(function()
 		Window.RainbowHue = os.clock()%10/10
-		--[[if Window.RainbowHue < 1 then
-			Window.RainbowHue = Window.RainbowHue + 0.001
-		else
-			Window.RainbowHue = 0
-		end]]
 	end)
 	function Window:SetName(Name)
 		Window.Name = Name
@@ -899,15 +889,10 @@ local function InitDropdown(Parent,ScreenAsset,Window,Dropdown)
 		DropdownAsset.Background.Position = UDim2.new(0.5,0,0,DropdownAsset.Title.Size.Y.Offset)
 		DropdownAsset.Size = UDim2.new(1,0,0,DropdownAsset.Title.Size.Y.Offset + DropdownAsset.Background.Size.Y.Offset)
 	end)
-	--[[DropdownAsset.Background.Value:GetPropertyChangedSignal("TextBounds"):Connect(function()
-		DropdownAsset.Background.Size = UDim2.new(1,0,0,DropdownAsset.Background.Value.TextBounds.Y + 2)
-		DropdownAsset.Size = UDim2.new(1,0,0,DropdownAsset.Title.Size.Y.Offset + DropdownAsset.Background.Size.Y.Offset)
-	end)]]
 
 	local function SetOptionState(Option,Toggle)
 		local Selected = {}
 
-		-- Value Setting
 		if Option.Mode == "Button" then
 			for Index, Option in pairs(Dropdown.List) do
 				if Option.Mode == "Button" then
@@ -926,14 +911,12 @@ local function InitDropdown(Parent,ScreenAsset,Window,Dropdown)
 		Option.Instance.BorderColor3 = Option.Value
 			and Window.Color or Color3.fromRGB(60,60,60)
 
-		-- Selected Setting
 		for Index, Option in pairs(Dropdown.List) do
 			if Option.Value then
 				Selected[#Selected + 1] = Option.Name
 			end
 		end
 
-		-- Dropdown Title Setting
 		if #Selected == 0 then
 			DropdownAsset.Background.Value.Text = "..."
 		else
@@ -1134,7 +1117,7 @@ local function InitColorpicker(Parent,ScreenAsset,Window,Colorpicker)
 				if not PaletteAsset.Visible then AlphaRender:Disconnect() end
 				local Mouse = UserInputService:GetMouseLocation()
 				local ColorX = math.clamp(Mouse.X - PaletteAsset.Alpha.AbsolutePosition.X,0,PaletteAsset.Alpha.AbsoluteSize.X) / PaletteAsset.Alpha.AbsoluteSize.X
-				Colorpicker.Value[4] = math.floor(ColorX * 10^2) / (10^2) -- idk %.2f little bit broken with this
+				Colorpicker.Value[4] = math.floor(ColorX * 10^2) / (10^2)
 				Update()
 			end)
 		end
@@ -1204,8 +1187,8 @@ local function InitColorpicker(Parent,ScreenAsset,Window,Colorpicker)
 	end)
 end
 
-local Bracket = InitScreen()
-function Bracket:Window(Window)
+local Packet = InitScreen()
+function Packet:Window(Window)
 	Window = GetType(Window,{},"table")
 	Window.Name = GetType(Window.Name,"Window","string")
 	Window.Color = GetType(Window.Color,Color3.new(1,0.5,0.25),"Color3")
@@ -1218,11 +1201,11 @@ function Bracket:Window(Window)
 	Window.Elements = {}
 	Window.Flags = {}
 
-	local WindowAsset = InitWindow(Bracket.ScreenAsset,Window)
+	local WindowAsset = InitWindow(Packet.ScreenAsset,Window)
 	function Window:Tab(Tab)
 		Tab = GetType(Tab,{},"table")
 		Tab.Name = GetType(Tab.Name,"Tab","string")
-		local ChooseTab = InitTab(Bracket.ScreenAsset,WindowAsset,Window,Tab)
+		local ChooseTab = InitTab(Packet.ScreenAsset,WindowAsset,Window,Tab)
 
 		function Tab:AddConfigSection(PFName,Side)
 			local ConfigSection = Tab:Section({Name = "Configs",Side = Side}) do
@@ -1293,7 +1276,7 @@ function Bracket:Window(Window)
 			Button = GetType(Button,{},"table")
 			Button.Name = GetType(Button.Name,"Button","string")
 			Button.Callback = GetType(Button.Callback,function() end,"function")
-			InitButton(ChooseTab(Button.Side),Bracket.ScreenAsset,Window,Button)
+			InitButton(ChooseTab(Button.Side),Packet.ScreenAsset,Window,Button)
 			return Button
 		end
 		function Tab:Toggle(Toggle)
@@ -1306,7 +1289,7 @@ function Bracket:Window(Window)
 			Window.Elements[#Window.Elements + 1] = Toggle
 			Window.Flags[Toggle.Flag] = Toggle.Value
 
-			InitToggle(ChooseTab(Toggle.Side),Bracket.ScreenAsset,Window,Toggle)
+			InitToggle(ChooseTab(Toggle.Side),Packet.ScreenAsset,Window,Toggle)
 			return Toggle
 		end
 		function Tab:Slider(Slider)
@@ -1323,7 +1306,7 @@ function Bracket:Window(Window)
 			Window.Elements[#Window.Elements + 1] = Slider
 			Window.Flags[Slider.Flag] = Slider.Value
 
-			InitSlider(ChooseTab(Slider.Side),Bracket.ScreenAsset,Window,Slider)
+			InitSlider(ChooseTab(Slider.Side),Packet.ScreenAsset,Window,Slider)
 			return Slider
 		end
 		function Tab:Textbox(Textbox)
@@ -1338,7 +1321,7 @@ function Bracket:Window(Window)
 			Window.Elements[#Window.Elements + 1] = Textbox
 			Window.Flags[Textbox.Flag] = Textbox.Value
 
-			InitTextbox(ChooseTab(Textbox.Side),Bracket.ScreenAsset,Window,Textbox)
+			InitTextbox(ChooseTab(Textbox.Side),Packet.ScreenAsset,Window,Textbox)
 			return Textbox
 		end
 		function Tab:Keybind(Keybind)
@@ -1353,7 +1336,7 @@ function Bracket:Window(Window)
 			Window.Elements[#Window.Elements + 1] = Keybind
 			Window.Flags[Keybind.Flag] = Keybind.Value
 
-			InitKeybind(ChooseTab(Keybind.Side),Bracket.ScreenAsset,Window,Keybind)
+			InitKeybind(ChooseTab(Keybind.Side),Packet.ScreenAsset,Window,Keybind)
 			return Keybind
 		end
 		function Tab:Dropdown(Dropdown)
@@ -1364,7 +1347,7 @@ function Bracket:Window(Window)
 			Window.Elements[#Window.Elements + 1] = Dropdown
 			Window.Flags[Dropdown.Flag] = Dropdown.Value
 
-			InitDropdown(ChooseTab(Dropdown.Side),Bracket.ScreenAsset,Window,Dropdown)
+			InitDropdown(ChooseTab(Dropdown.Side),Packet.ScreenAsset,Window,Dropdown)
 			return Dropdown
 		end
 		function Tab:Colorpicker(Colorpicker)
@@ -1377,7 +1360,7 @@ function Bracket:Window(Window)
 			Window.Elements[#Window.Elements + 1] = Colorpicker
 			Window.Flags[Colorpicker.Flag] = Colorpicker.Value
 
-			InitColorpicker(ChooseTab(Colorpicker.Side),Bracket.ScreenAsset,Window,Colorpicker)
+			InitColorpicker(ChooseTab(Colorpicker.Side),Packet.ScreenAsset,Window,Colorpicker)
 			return Colorpicker
 		end
 		function Tab:Section(Section)
@@ -1401,7 +1384,7 @@ function Bracket:Window(Window)
 				Button = GetType(Button,{},"table")
 				Button.Name = GetType(Button.Name,"Button","string")
 				Button.Callback = GetType(Button.Callback,function() end,"function")
-				InitButton(SectionContainer,Bracket.ScreenAsset,Window,Button)
+				InitButton(SectionContainer,Packet.ScreenAsset,Window,Button)
 				return Button
 			end
 			function Section:Toggle(Toggle)
@@ -1414,7 +1397,7 @@ function Bracket:Window(Window)
 				Window.Elements[#Window.Elements + 1] = Toggle
 				Window.Flags[Toggle.Flag] = Toggle.Value
 
-				InitToggle(SectionContainer,Bracket.ScreenAsset,Window,Toggle)
+				InitToggle(SectionContainer,Packet.ScreenAsset,Window,Toggle)
 				return Toggle
 			end
 			function Section:Slider(Slider)
@@ -1431,7 +1414,7 @@ function Bracket:Window(Window)
 				Window.Elements[#Window.Elements + 1] = Slider
 				Window.Flags[Slider.Flag] = Slider.Value
 
-				InitSlider(SectionContainer,Bracket.ScreenAsset,Window,Slider)
+				InitSlider(SectionContainer,Packet.ScreenAsset,Window,Slider)
 				return Slider
 			end
 			function Section:Textbox(Textbox)
@@ -1446,7 +1429,7 @@ function Bracket:Window(Window)
 				Window.Elements[#Window.Elements + 1] = Textbox
 				Window.Flags[Textbox.Flag] = Textbox.Value
 
-				InitTextbox(SectionContainer,Bracket.ScreenAsset,Window,Textbox)
+				InitTextbox(SectionContainer,Packet.ScreenAsset,Window,Textbox)
 				return Textbox
 			end
 			function Section:Keybind(Keybind)
@@ -1461,7 +1444,7 @@ function Bracket:Window(Window)
 				Window.Elements[#Window.Elements + 1] = Keybind
 				Window.Flags[Keybind.Flag] = Keybind.Value
 
-				InitKeybind(SectionContainer,Bracket.ScreenAsset,Window,Keybind)
+				InitKeybind(SectionContainer,Packet.ScreenAsset,Window,Keybind)
 				return Keybind
 			end
 			function Section:Dropdown(Dropdown)
@@ -1472,7 +1455,7 @@ function Bracket:Window(Window)
 				Window.Elements[#Window.Elements + 1] = Dropdown
 				Window.Flags[Dropdown.Flag] = Dropdown.Value
 
-				InitDropdown(SectionContainer,Bracket.ScreenAsset,Window,Dropdown)
+				InitDropdown(SectionContainer,Packet.ScreenAsset,Window,Dropdown)
 				return Dropdown
 			end
 			function Section:Colorpicker(Colorpicker)
@@ -1485,7 +1468,7 @@ function Bracket:Window(Window)
 				Window.Elements[#Window.Elements + 1] = Colorpicker
 				Window.Flags[Colorpicker.Flag] = Colorpicker.Value
 
-				InitColorpicker(SectionContainer,Bracket.ScreenAsset,Window,Colorpicker)
+				InitColorpicker(SectionContainer,Packet.ScreenAsset,Window,Colorpicker)
 				return Colorpicker
 			end
 			return Section
@@ -1495,18 +1478,18 @@ function Bracket:Window(Window)
 	return Window
 end
 
-function Bracket:TableToColor(Table)
+function Packet:TableToColor(Table)
 	if type(Table) ~= "table" then return Table end
 	return Color3.fromHSV(Table[1],Table[2],Table[3])
 end
 
-function Bracket:Notification(Notification)
+function Packet:Notification(Notification)
 	Notification = GetType(Notification,{},"table")
 	Notification.Title = GetType(Notification.Title,"Title","string")
 	Notification.Description = GetType(Notification.Description,"Description","string")
 
 	local NotificationAsset = GetAsset("Notification/ND")
-	NotificationAsset.Parent = Bracket.ScreenAsset.NDHandle
+	NotificationAsset.Parent = Packet.ScreenAsset.NDHandle
 	NotificationAsset.Title.Text = Notification.Title
 	NotificationAsset.Description.Text = Notification.Description
 	NotificationAsset.Title.Size = UDim2.new(1,0,0,NotificationAsset.Title.TextBounds.Y)
@@ -1539,14 +1522,14 @@ function Bracket:Notification(Notification)
 	end
 end
 
-function Bracket:Notification2(Notification)
+function Packet:Notification2(Notification)
 	Notification = GetType(Notification,{},"table")
 	Notification.Title = GetType(Notification.Title,"Title","string")
 	Notification.Duration = GetType(Notification.Duration,5,"number")
 	Notification.Color = GetType(Notification.Color,Color3.new(1,0.5,0.25),"Color3")
 
 	local NotificationAsset = GetAsset("Notification/NL")
-	NotificationAsset.Parent = Bracket.ScreenAsset.NLHandle
+	NotificationAsset.Parent = Packet.ScreenAsset.NLHandle
 	NotificationAsset.Main.Title.Text = Notification.Title
 	NotificationAsset.Main.GLine.BackgroundColor3 = Notification.Color
 	NotificationAsset.Main.Size = UDim2.new(
@@ -1577,4 +1560,4 @@ function Bracket:Notification2(Notification)
 	end)
 end
 
-return Bracket
+return Packet
