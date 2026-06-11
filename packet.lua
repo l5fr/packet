@@ -1,6 +1,6 @@
 --// Coast (old) GUI
 --// Coast (old) GUI
-local Library = loadstring(game:HttpGet("https://github.com/l5fr/packet/edit/main/packet.lua"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/l5fr/packet/main/packet.lua"))()
 local MainTab = Library:CreateTab("Packet / Sell Lemons", "By Claude")
 
 --// Services
