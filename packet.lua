@@ -1,98 +1,175 @@
-local Bracket = loadstring(game:HttpGet("https://raw.githubusercontent.com/AlexR32/Bracket/main/BracketV32.lua"))()
-Bracket:Notification() Bracket:Notification2()
+local Packet = loadstring(game:HttpGet("https://raw.githubusercontent.com/l5fr/packet/main/packet.lua"))()
+Packet:Notification() Packet:Notification2()
 
-local Window = Bracket:Window({Name = "Window",Enabled = true,Color = Color3.new(1,0.5,0.25),Size = UDim2.new(0,496,0,496),Position = UDim2.new(0.5,-248,0.5,-248)}) do
-	--Window:ChangeName("Window")
-	--Window:ChangeSize(UDim2.new(0,496,0,496))
-	--Window:ChangePosition(UDim2.new(0.5,-248,0.5,-248))
-	--Window:ChangeColor(Color3.new(1,0.5,0.25))
-	--Window:Toggle(true)
-	--Window.Background -- ImageLabel
-	local Tab = Window:Tab({Name = "Tab"}) do
-		--Tab:ChangeName("Tab")
+local Window = Packet:Window({
+    Name = "Packet 1.1",
+    Enabled = true,
+    Color = Color3.new(1, 0.5, 0.25),
+    Size = UDim2.new(0, 496, 0, 496),
+    Position = UDim2.new(0.5, -248, 0.5, -248)
+}) do
 
-		--Side might be "Left", "Right" or nil for auto side choose
-		--if callback nil then it will be replaced with print function
-		Tab:Divider({Text = "Divider",Side = "Left"})
+    local Tab = Window:Tab({Name = "Main"}) do
 
-		local Label = Tab:Label({Text = "Label",Side = "Left"})
-		--Label:ChangeText("Label")
+        Tab:Divider({Text = "Auto Features", Side = "Left"})
 
-		local Button = Tab:Button({Name = "Button",Side = "Left",Callback = function()end})
-		--Button:ChangeName("Button")
-		--Button:ChangeCallback(function()end)
-		--Button:ToolTip("ToolTip")
+        -- Auto Buy Toggle with ON/OFF display
+        local AutoBuyToggle = Tab:Toggle({
+            Name = "Auto Buy: OFF",
+            Side = "Left",
+            Value = false,
+            Callback = function(Value)
+                local status = Value and "ON" or "OFF"
+                AutoBuyToggle:ChangeName("Auto Buy: " .. status)
+                Packet:Notification({
+                    Title = "Auto Buy",
+                    Content = Value and "Enabled" or "Disabled",
+                    Duration = 3
+                })
+            end
+        })
 
-		local Toggle = Tab:Toggle({Name = "Toggle",Side = "Left",Value = false,Callback = function(Bool)end})
-		--Toggle:ChangeName("Toggle")
-		--Toggle:ChangeValue(true)
-		--Toggle:ChangeCallback(function(Bool)end)
-		--Toggle:ToolTip("ToolTip")
-		--Toggle:Keybind({Key = "NONE",Mouse = false,Blacklist = {"W","A","S","D","Slash","Tab","Backspace","Escape","Space","Delete","Unknown","Backquote"},Callback = function(Bool,Key)end})
+        -- Auto Upgrade Toggle with ON/OFF display
+        local AutoUpgradeToggle = Tab:Toggle({
+            Name = "Auto Upgrade: OFF",
+            Side = "Left",
+            Value = false,
+            Callback = function(Value)
+                local status = Value and "ON" or "OFF"
+                AutoUpgradeToggle:ChangeName("Auto Upgrade: " .. status)
+                Packet:Notification({
+                    Title = "Auto Upgrade",
+                    Content = Value and "Enabled" or "Disabled",
+                    Duration = 3
+                })
+            end
+        })
 
-		local Slider = Tab:Slider({Name = "Slider",Side = "Left",Min = 0,Max = 100,Value = 50,Precise = 2,Unit = "",Callback = function(Number)end})
-		--Slider:ChangeName("Slider")
-		--Slider:ChangeValue(50)
-		--Slider:ChangeCallback(function(Number)end)
-		--Slider:ToolTip("ToolTip")
+        -- Auto Fruit Toggle with ON/OFF display
+        local AutoFruitToggle = Tab:Toggle({
+            Name = "Auto Fruit: OFF",
+            Side = "Left",
+            Value = false,
+            Callback = function(Value)
+                local status = Value and "ON" or "OFF"
+                AutoFruitToggle:ChangeName("Auto Fruit: " .. status)
+                Packet:Notification({
+                    Title = "Auto Fruit",
+                    Content = Value and "Enabled" or "Disabled",
+                    Duration = 3
+                })
+            end
+        })
 
-		local Textbox = Tab:Textbox({Name = "Textbox",Side = "Left",Text = "Text",Placeholder = "Placeholder",NumberOnly = false,Callback = function(String)end})
-		--Textbox:ChangeName("Textbox")
-		--Textbox:ChangeText("Text")
-		--Textbox:ChangePlaceholder("Placeholder")
-		--Textbox:ChangeCallback(function(String)end)
-		--Textbox:ToolTip("ToolTip")
+        -- Auto Rebirth Toggle with ON/OFF display
+        local AutoRebirthToggle = Tab:Toggle({
+            Name = "Auto Rebirth: OFF",
+            Side = "Left",
+            Value = false,
+            Callback = function(Value)
+                local status = Value and "ON" or "OFF"
+                AutoRebirthToggle:ChangeName("Auto Rebirth: " .. status)
+                Packet:Notification({
+                    Title = "Auto Rebirth",
+                    Content = Value and "Enabled" or "Disabled",
+                    Duration = 3
+                })
+            end
+        })
 
-		local Keybind = Tab:Keybind({Name = "Keybind",Side = "Left",Key = "NONE",Mouse = false,Blacklist = {"W","A","S","D","Slash","Tab","Backspace","Escape","Space","Delete","Unknown","Backquote"},Callback = function(Bool,Key)end})
-		--Keybind:ChangeName("Keybind")
-		--Keybind:ChangeCallback(function(Bool,Key)end)
-		--Keybind:ToolTip("ToolTip")
-		
-		local BodyParts = {"Head"}
-		local Dropdown = Tab:Dropdown({Name = "Dropdown",Side = "Left",Default = BodyParts,List = {
-			{
-				Name = "Head",
-				Mode = "Toggle",
-				Value = false,
-				Callback = function(Selected)
-					BodyParts = Selected
-					print(BodyParts)
-				end
-			},
-			{
-				Name = "HumanoidRootPart",
-				Mode = "Toggle",
-				Value = false,
-				Callback = function(Selected)
-					BodyParts = Selected
-					print(BodyParts)
-				end
-			}
-		}})
-		--Dropdown:Clear()
-		--Dropdown:AddOption("Option")
-		--Dropdown:RemoveOption("Option")
-		--Dropdown:SelectOption("Option")
-		--Dropdown:ChangeName("Dropdown")
-		--Dropdown:ToolTip("ToolTip")
+        -- Auto Evolve Toggle with ON/OFF display
+        local AutoEvolveToggle = Tab:Toggle({
+            Name = "Auto Evolve: OFF",
+            Side = "Left",
+            Value = false,
+            Callback = function(Value)
+                local status = Value and "ON" or "OFF"
+                AutoEvolveToggle:ChangeName("Auto Evolve: " .. status)
+                Packet:Notification({
+                    Title = "Auto Evolve",
+                    Content = Value and "Enabled" or "Disabled",
+                    Duration = 3
+                })
+            end
+        })
 
-		local Colorpicker = Tab:Colorpicker({Name = "Colorpicker",Side = "Left",Color = Color3.new(1,0,0),Callback = function(Color,Table)end})
-		--Colorpicker:ChangeName("Colorpicker")
-		--Colorpicker:ChangeCallback(function(Color3)end)
-		--Colorpicker:ChangeValue(Color3.new(1,0,0))
-		--Colorpicker:ToolTip("ToolTip")
+        -- Auto Power Level Toggle with ON/OFF display
+        local AutoPowerLevelToggle = Tab:Toggle({
+            Name = "Auto Power Level: OFF",
+            Side = "Left",
+            Value = false,
+            Callback = function(Value)
+                local status = Value and "ON" or "OFF"
+                AutoPowerLevelToggle:ChangeName("Auto Power Level: " .. status)
+                Packet:Notification({
+                    Title = "Auto Power Level",
+                    Content = Value and "Enabled" or "Disabled",
+                    Duration = 3
+                })
+            end
+        })
 
-		local Section = Tab:Section({Name = "Section",Side = "Right"}) do
-			--Same Elements as in tab but without side option
-			Section:Divider()
-			Section:Label()
-			Section:Button()
-			Section:Toggle()
-			Section:Slider()
-			Section:Textbox()
-			Section:Keybind()
-			Section:Dropdown()
-			Section:Colorpicker()
-		end
-	end
+        Tab:Divider({Text = "Sewer Utilities", Side = "Left"})
+
+        Tab:Button({
+            Name = "Pull All Levers",
+            Side = "Left",
+            Callback = function()
+                Packet:Notification({
+                    Title = "Pull All Levers",
+                    Content = "Pulled levers!",
+                    Duration = 3
+                })
+            end
+        })
+
+        Tab:Button({
+            Name = "Vine Harvest",
+            Side = "Left",
+            Callback = function()
+                Packet:Notification({
+                    Title = "Vine Harvest",
+                    Content = "Harvesting vines...",
+                    Duration = 3
+                })
+            end
+        })
+
+        Tab:Button({
+            Name = "Teleport to Sewer Alien",
+            Side = "Left",
+            Callback = function()
+                Packet:Notification({
+                    Title = "Teleport",
+                    Content = "Teleported to Sewer Alien",
+                    Duration = 3
+                })
+            end
+        })
+
+        local Section = Tab:Section({Name = "Settings", Side = "Right"}) do
+            Section:Divider()
+            Section:Label({Text = "Status: Ready"})
+            Section:Button({
+                Name = "Destroy GUI",
+                Callback = function()
+                    Window:Toggle(false)
+                    Packet:Notification({
+                        Title = "Packet 1.1",
+                        Content = "GUI Destroyed",
+                        Duration = 2
+                    })
+                    task.wait(2)
+                    Window = nil
+                end
+            })
+        end
+    end
 end
+
+Packet:Notification({
+    Title = "Packet 1.1",
+    Content = "Loaded Successfully!",
+    Duration = 5
+})
+Packet:Notification2()
