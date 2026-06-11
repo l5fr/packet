@@ -1,13 +1,9 @@
---// Coast (old) GUI
---// Coast (old) GUI
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/l5fr/packet/main/packet.lua"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/bloodwall/-back-ups-for-libs/main/coast%20old"))()
 local MainTab = Library:CreateTab("Packet / Sell Lemons", "By Claude")
 
---// Services
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
---// Find Tycoon
 local userTycoon = (function()
     for _, v in pairs(workspace:GetChildren()) do
         if v:IsA("Folder") and v.Name:match("Tycoon%d") then
@@ -23,7 +19,6 @@ if not userTycoon then
     return
 end
 
---// Variables
 local AutoBuy = false
 local AutoUpgrade = false
 local AutoFruit = false
@@ -155,8 +150,8 @@ local function readQuantity(frameName)
     local q     = frame and frame:FindFirstChild("Quantity")
     return q and parseNumber(q.Text)
 end
-local function getCurrentInvestors()   return readQuantity("Amount")    or 0 end
-local function getPotentialInvestors() return readQuantity("Potential")       end
+local function getCurrentInvestors()   return readQuantity("Amount") or 0 end
+local function getPotentialInvestors() return readQuantity("Potential") end
 
 task.spawn(function()
     while true do
@@ -190,10 +185,10 @@ task.spawn(function()
     end
 end)
 
-local EvolveAt        = 100
-local EvolveCooldown  = 2
-local EvolveTimeout   = 8
-local evolveBusy      = false
+local EvolveAt       = 100
+local EvolveCooldown = 2
+local EvolveTimeout  = 8
+local evolveBusy     = false
 
 local function getEvolveRemote()
     local remotes = userTycoon:FindFirstChild("Remotes")
@@ -385,85 +380,73 @@ task.spawn(function()
     end
 end)
 
---// GUI — Coast (old)
+-- GUI
 MainTab:CreateSection("Automation")
 
 MainTab:CreateCheckbox("Auto Buy", function(Value)
     AutoBuy = Value
-    print("Auto Buy:", Value and "Enabled" or "Disabled")
 end)
 
 MainTab:CreateCheckbox("Auto Upgrade", function(Value)
     AutoUpgrade = Value
-    print("Auto Upgrade:", Value and "Enabled" or "Disabled")
 end)
 
 MainTab:CreateCheckbox("Auto Fruit", function(Value)
     AutoFruit = Value
-    print("Auto Fruit:", Value and "Enabled" or "Disabled")
 end)
 
 MainTab:CreateCheckbox("Auto Rebirth", function(Value)
     AutoRebirth = Value
     if Value and not getRebirthRemote() then
-        warn("Auto Rebirth: Rebirth remote not found in your tycoon!")
-        return
+        warn("Rebirth remote not found!")
     end
-    print("Auto Rebirth:", Value and "Enabled" or "Disabled")
 end)
 
 MainTab:CreateCheckbox("Auto Evolve (x10 income)", function(Value)
     AutoEvolve = Value
     if Value and not getEvolveRemote() then
-        warn("Auto Evolve: Evolve remote not found in your tycoon!")
-        return
+        warn("Evolve remote not found!")
     end
-    print("Auto Evolve:", Value and "Enabled" or "Disabled")
 end)
 
 MainTab:CreateCheckbox("Auto Power Level", function(Value)
     AutoPowerLevel = Value
-    print("Auto Power Level:", Value and "Enabled" or "Disabled")
 end)
 
 MainTab:CreateSection("Actions")
 
 MainTab:CreateButton("Pull All Levers (sewer)", function()
     local n = pullAllLevers()
-    print(n > 0 and ("Pulled " .. n .. " lever(s) + grabbed sewer keys") or "No levers found (is the sewer loaded?)")
+    print(n > 0 and ("Pulled " .. n .. " levers") or "No levers found")
 end)
 
 MainTab:CreateButton("Vine Harvest", function()
-    print("Vine Harvest: Running...")
     task.spawn(function()
         local ok, err = doSewerRun()
-        print(ok and "Vine Harvest: Done! Levers pulled, keys grabbed, vine harvested." or ("Vine Harvest Failed: " .. tostring(err)))
+        print(ok and "Vine Harvest done!" or ("Failed: " .. tostring(err)))
     end)
 end)
 
 MainTab:CreateButton("Teleport to Sewer Alien", function()
     local ok, err = teleportToAlien()
-    print(ok and "Teleported to sewer alien (UFO)" or ("Teleport Failed: " .. tostring(err)))
+    print(ok and "Teleported!" or ("Failed: " .. tostring(err)))
 end)
 
 MainTab:CreateSection("Settings")
 
 MainTab:CreateSlider("Rebirth Gain Multiple", 10, 1, 10, 1, function(Value)
     RebirthGainMultiple = Value / 10
-    print("Rebirth Gain Multiple set to:", RebirthGainMultiple)
 end)
 
 MainTab:CreateSlider("Min Investors to Rebirth", 100, 1, 0, 1, function(Value)
     MinPotential = Value
-    print("Min Potential set to:", MinPotential)
 end)
 
 MainTab:CreateSlider("Evolve At %", 100, 50, 100, 100, function(Value)
     EvolveAt = Value
-    print("Evolve At:", EvolveAt .. "%")
 end)
 
---// LIVE STATUS PANEL (native ScreenGui — unchanged)
+-- Status Panel
 task.spawn(function()
     local parent = LocalPlayer:FindFirstChildOfClass("PlayerGui")
     if not parent then
@@ -563,4 +546,4 @@ task.spawn(function()
     end
 end)
 
-print("Vibe Code Central / Sell Lemons — Loaded!")
+print("Packet loaded!")
