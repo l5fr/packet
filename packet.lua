@@ -157,7 +157,7 @@ local function InitToolTip(Parent,ScreenAsset,Text)
 	end)
 end
 local function InitScreen()
-	local ScreenAsset = GetAsset("Screen/Packet")
+	local ScreenAsset = GetAsset("Screen/Bracket")
 	if not Debug then sethiddenproperty(ScreenAsset,"OnTopOfCoreBlur",true) end
 	ScreenAsset.Name = "Packet " .. game:GetService("HttpService"):GenerateGUID(false)
 	ScreenAsset.Parent = Debug and LocalPlayer:FindFirstChildOfClass("PlayerGui") or CoreGui
@@ -772,9 +772,9 @@ local function InitKeybind(Parent,ScreenAsset,Window,Keybind)
 		KeybindAsset.Size = UDim2.new(1,0,0,KeybindAsset.Title.TextBounds.Y)
 	end)
 	KeybindAsset.Value:GetPropertyChangedSignal("TextBounds"):Connect(function()
-		KeybindAsset.Value.Size = UDim2.new(0,KeybindAsset.Value.TextBounds.X,1,0)
-		KeybindAsset.Title.Size = UDim2.new(1,-KeybindAsset.Value.Size.X.Offset,1,0)
-	end)
+			KeybindAsset.Value.Size = UDim2.new(0,KeybindAsset.Value.TextBounds.X,1,0)
+			KeybindAsset.Title.Size = UDim2.new(1,-KeybindAsset.Value.Size.X.Offset,1,0)
+		end)
 	UserInputService.InputBegan:Connect(function(Input)
 		local Key = tostring(Input.KeyCode):gsub("Enum.KeyCode.","")
 		if Keybind.WaitingForBind and Input.UserInputType == Enum.UserInputType.Keyboard then
